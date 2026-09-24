@@ -6,7 +6,6 @@ import datetime
 
 def get_live_ai_response(user_query, persona, file_data=""):
     try:
-        # Build clean, powerful system prompts
         if persona == "Creative Director":
             system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
         elif persona == "Fun & Sarcastic (Grok Mode)":
@@ -15,30 +14,27 @@ def get_live_ai_response(user_query, persona, file_data=""):
             system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
 
         now = datetime.datetime.now()
-        time_anchor = f" [Current Time: {now.strftime('%I:%M %p')} Local Zone]"
+        time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
         
-        # Stitch compound query block parameters safely WITHOUT line breaks (\n)
-        full_context = f"System Directives: {system_rules} {time_anchor} | "
+        # Build raw text variables without any string length limitations
+        full_context = f"System Directives: {system_rules}{time_anchor}\n"
         if file_data:
-            full_context += f"{file_data} | "
+            full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # FIXED: Explicitly strip out any line breaks to completely eliminate the invalid %0A code error!
-        flat_context = full_context.replace("\n", " ").replace("\r", " ")
-
-        # URL-encode the flat text string to pass it safely through the keyless endpoint
-        encoded_text = urllib.parse.quote(flat_context)
-        api_url = f"https://pollinations.ai{encoded_text}?model=searchgpt&jsonMode=false"
-        
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        # FIXED: Passes raw text safely inside an internal json payload body using a POST request.
+        # This completely stops the %0A character parsing crash by keeping data out of the URL string!
+        payload = {
+            "messages": [{"role": "user", "content": full_context}],
+            "model": "openai",
+            "jsonMode": False
         }
         
-        res = requests.get(api_url, headers=headers, timeout=15, verify=False)
+        res = requests.post("https://pollinations.ai", json=payload, timeout=15, verify=False)
         if res.status_code == 200 and res.text:
             return res.text.strip()
             
-        return "System engine cluster busy. Let's try sending that message again!"
+        return "System cloud core busy. Please try clicking submission again!"
     except Exception as e:
         return f"Operational loop interruption: {str(e)}"
 
