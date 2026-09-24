@@ -7,7 +7,6 @@ import datetime
 
 def get_live_ai_response(user_query, persona, file_data=""):
     try:
-        # Build clean, powerful system prompts
         if persona == "Creative Director":
             system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
         elif persona == "Fun & Sarcastic (Grok Mode)":
@@ -16,39 +15,40 @@ def get_live_ai_response(user_query, persona, file_data=""):
             system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
 
         now = datetime.datetime.now()
-        time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
+        time_anchor = f" | Current Time: {now.strftime('%I:%M %p')} Local Zone"
         
-        full_context = f"System Directives: {system_rules}{time_anchor}\n"
+        # Build completely flat context strings without any line breaks (\n) to prevent %0A crashes
+        full_context = f"System Directives: {system_rules}{time_anchor} | "
         if file_data:
-            full_context += f"{file_data}\n"
+            full_context += f"{file_data} | "
         full_context += f"User Message: {user_query}"
-
-        # FIXED: Connecting directly to Hugging Face's serverless pipeline gateway (Zero Keys, Zero Blockages!)
-        api_url = "https://huggingface.co"
         
-        # Build standard chat format payload
+        flat_context = full_context.replace("\n", " ").replace("\r", " ")
+
+        # Gateway A: Connecting directly to Hugging Face serverless execution architecture
+        api_url = "https://huggingface.co"
         payload = {
-            "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_rules}{time_anchor}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{full_context}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_rules}{time_anchor}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{flat_context}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
             "parameters": {"max_new_tokens": 1024, "return_full_text": False}
         }
         
-        # Fire standard request directly to the model core layout
-        res = requests.post(api_url, json=payload, timeout=15, verify=False)
-        
+        res = requests.post(api_url, json=payload, timeout=8, verify=False)
         if res.status_code == 200:
             data = res.json()
-            if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
-                return data[0]["generated_text"].strip()
+            if isinstance(data, list) and len(data) > 0 and "generated_text" in data:
+                return data["generated_text"].strip()
             elif isinstance(data, dict) and "generated_text" in data:
                 return data["generated_text"].strip()
                 
-        # Secondary fallback gateway in case the primary hub is loading
-        fallback_url = f"https://pollinations.ai{urllib.parse.quote(full_context)}?model=qwen"
+        # Gateway B: FIXED & Protected single-step URL fallback structure with accurate routing slashes
+        encoded_query = urllib.parse.quote(flat_context)
+        fallback_url = f"https://pollinations.ai{encoded_query}"
+        
         fallback_res = requests.get(fallback_url, timeout=10, verify=False)
         if fallback_res.status_code == 200 and fallback_res.text:
             return fallback_res.text.strip()
             
-        return "System core pipeline busy. Please try clicking submission again!"
+        return "System cloud core busy. Please try clicking submission again!"
     except Exception as e:
         return f"Operational loop interruption: {str(e)}"
 
