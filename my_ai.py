@@ -33,7 +33,7 @@ def get_live_ai_response(user_query, persona, file_data=""):
         if res.status_code == 200:
             data = res.json()
             if isinstance(data, list) and len(data) > 0 and "generated_text" in data:
-                return data[0]["generated_text"].strip()
+                return data["generated_text"].strip()
             elif isinstance(data, dict) and "generated_text" in data:
                 return data["generated_text"].strip()
             
