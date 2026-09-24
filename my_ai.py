@@ -3,7 +3,7 @@ import numpy as np
 import librosa
 import urllib.parse
 import requests
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 def search_the_web(query):
     try:
@@ -39,7 +39,7 @@ st.set_page_config(page_title="Grok Clone Studio", page_icon="🐦", layout="wid
 
 # Persistent browser thread sessions
 if "threads" not in st.session_state:
-    st.session_state.threads = {1: {"title": "Grok Core Node Chat", "messages": []}}
+    st.session_state.threads = {1: {"title": "General AI Workspace Chat", "messages": []}}
 if "active_id" not in st.session_state:
     st.session_state.active_id = 1
 
@@ -49,7 +49,7 @@ with st.sidebar:
     
     if st.button("➕ New Conversation", use_container_width=True):
         new_id = max(st.session_state.threads.keys()) + 1
-        st.session_state.threads[new_id] = {"title": f"Grok Thread {new_id}", "messages": []}
+        st.session_state.threads[new_id] = {"title": f"Thread {new_id}", "messages": []}
         st.session_state.active_id = new_id
         st.rerun()
 
@@ -70,7 +70,7 @@ with st.sidebar:
                     del st.session_state.threads[t_id]
                     st.session_state.active_id = list(st.session_state.threads.keys())
                 else:
-                    st.session_state.threads = {1: {"title": "Grok Core Node Chat", "messages": []}}
+                    st.session_state.threads = {1: {"title": "General AI Workspace Chat", "messages": []}}
                     st.session_state.active_id = 1
                 st.rerun()
 
@@ -83,8 +83,8 @@ with st.sidebar:
     
     personality_prompts = {
         "Fun & Sarcastic (Grok Mode)": "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently, but you MUST use provided live web search data to give highly accurate, up-to-date answers.",
-        "Standard Assistant": "You are a helpful, professional assistant.",
-        "Creative Director": "You are a world-class music video director. Combine media tracks and styles into video storyboards."
+        "Standard Assistant": "You are a helpful, professional, and polite AI assistant. Give clean, straightforward, and direct answers using provided live web search data if needed.",
+        "Creative Director": "You are a world-class music video director and visual concept artist. Combine descriptions, provided text reference logs, and media track audio properties to design stunning video concept storyboards, shot lists, and art directions."
     }
 
     st.markdown("---")
@@ -96,7 +96,7 @@ with st.sidebar:
                 img_link = generate_ai_photo(manual_img_prompt)
                 st.image(img_link, caption="Generated Frame Layout", use_container_width=True)
 
-# Main Application Frame
+# Main Application Frame Mapping
 title_mappings = {
     "Fun & Sarcastic (Grok Mode)": "🐦 Grok Private Core Node Terminal",
     "Standard Assistant": "💬 General Chat Assistant Workspace",
@@ -105,6 +105,7 @@ title_mappings = {
 st.title(title_mappings[personality_choice])
 st.caption(f"Active Thread Tracker Context ID: **#{st.session_state.active_id}**")
 
+# Collapsible media components mapped directly into Creative Director layouts
 if personality_choice == "Creative Director":
     with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=False):
         col1, col2 = st.columns(2)
@@ -127,7 +128,7 @@ for msg in current_messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-user_input = st.chat_input("Prompt Grok here...")
+user_input = st.chat_input("Ask anything...")
 
 if user_input:
     if len(current_messages) == 0:
@@ -173,12 +174,11 @@ if user_input:
         response_placeholder = st.empty()
         full_response = ""
         
-        with st.spinner("🧠 Grok is thinking..."):
+        with st.spinner("🧠 System processing..."):
             try:
-                # Fire request directly to the public open-source cloud model cluster endpoint (No Keys Needed!)
                 payload = {
                     "messages": run_messages,
-                    "model": "p1", # Links to premium open-source Qwen2.5 72B high-end text brain
+                    "model": "p1", # Accesses the premium 72B open-source engine
                     "stream": False
                 }
                 res = requests.post("https://pollinations.ai", json=payload)
