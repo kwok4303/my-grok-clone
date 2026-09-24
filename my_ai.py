@@ -1,12 +1,12 @@
 import streamlit as st
 import numpy as np
 import urllib.parse
-import json
 import requests
 import datetime
 
 def get_live_ai_response(user_query, persona, file_data=""):
     try:
+        # Build clean, powerful system prompts
         if persona == "Creative Director":
             system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
         elif persona == "Fun & Sarcastic (Grok Mode)":
@@ -15,38 +15,23 @@ def get_live_ai_response(user_query, persona, file_data=""):
             system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
 
         now = datetime.datetime.now()
-        time_anchor = f" | Current Time: {now.strftime('%I:%M %p')} Local Zone"
+        time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
         
-        # Build completely flat context strings without any line breaks (\n) to prevent %0A crashes
-        full_context = f"System Directives: {system_rules}{time_anchor} | "
+        # Assemble complete context variables safely
+        full_context = f"System Directives: {system_rules}{time_anchor}\n"
         if file_data:
-            full_context += f"{file_data} | "
+            full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
-        
-        flat_context = full_context.replace("\n", " ").replace("\r", " ")
 
-        # Gateway A: Connecting directly to Hugging Face serverless execution architecture
-        api_url = "https://huggingface.co"
+        # FIXED: Passes raw text safely inside an internal json payload body using a POST request.
+        # This completely stops the URL length crash by keeping data out of the address string!
         payload = {
-            "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_rules}{time_anchor}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{flat_context}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
-            "parameters": {"max_new_tokens": 1024, "return_full_text": False}
+            "messages": [{"role": "user", "content": full_context}]
         }
         
-        res = requests.post(api_url, json=payload, timeout=8, verify=False)
-        if res.status_code == 200:
-            data = res.json()
-            if isinstance(data, list) and len(data) > 0 and "generated_text" in data:
-                return data["generated_text"].strip()
-            elif isinstance(data, dict) and "generated_text" in data:
-                return data["generated_text"].strip()
-                
-        # Gateway B: FIXED & Protected single-step URL fallback structure with accurate routing slashes
-        encoded_query = urllib.parse.quote(flat_context)
-        fallback_url = f"https://pollinations.ai{encoded_query}"
-        
-        fallback_res = requests.get(fallback_url, timeout=10, verify=False)
-        if fallback_res.status_code == 200 and fallback_res.text:
-            return fallback_res.text.strip()
+        res = requests.post("https://pollinations.ai", json=payload, timeout=15, verify=False)
+        if res.status_code == 200 and res.text:
+            return res.text.strip()
             
         return "System cloud core busy. Please try clicking submission again!"
     except Exception as e:
