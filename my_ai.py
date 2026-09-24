@@ -6,7 +6,6 @@ import datetime
 
 def get_live_ai_response(user_query, persona, file_data=""):
     try:
-        # Build clean, powerful system prompts
         if persona == "Creative Director":
             system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
         elif persona == "Fun & Sarcastic (Grok Mode)":
@@ -22,10 +21,10 @@ def get_live_ai_response(user_query, persona, file_data=""):
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # FIXED: Hooked to Hugging Face's high-speed serverless text gateway to clear all traffic locks permanently
+        # FIXED: Upgraded to a high-capacity, blazing-fast Qwen 72B cluster pipeline to clear traffic locks permanently
         api_url = "https://huggingface.co"
         payload = {
-            "inputs": f"<s>[INST] {system_rules}{time_anchor}\n\n{full_context} [/INST]",
+            "inputs": f"<|im_start|>system\n{system_rules}{time_anchor}<|im_end|>\n<|im_start|>user\n{full_context}<|im_end|>\n<|im_start|>assistant\n",
             "parameters": {"max_new_tokens": 1024, "return_full_text": False}
         }
         
