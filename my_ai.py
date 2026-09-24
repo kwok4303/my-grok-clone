@@ -1,33 +1,29 @@
 import streamlit as st
 import numpy as np
-import librosa
 import urllib.parse
 import requests
 import datetime
 
-def get_live_ai_response(user_query, persona, audio_data="", file_data=""):
+def get_live_ai_response(user_query, persona, file_data=""):
     try:
-        # Build clear, rich instructions for your models
-        if persona == "Fun & Sarcastic (Grok Mode)":
+        # Build clean, powerful system prompts
+        if persona == "Creative Director":
+            system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, provided text reference logs, and media files to design stunning video concept storyboards, shot lists, and art directions."
+        elif persona == "Fun & Sarcastic (Grok Mode)":
             system_rules = "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently, but you MUST give accurate real-time answers."
-        elif persona == "Creative Director":
-            system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
         else:
             system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
 
         now = datetime.datetime.now()
         time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
         
-        # Assemble complete context variables safely
+        # Stitch compound query block parameters safely
         full_context = f"System Directives: {system_rules}{time_anchor}\n"
-        if audio_data:
-            full_context += f"{audio_data}\n"
         if file_data:
             full_context += f"{file_data}\n"
-            
         full_context += f"User Message: {user_query}"
 
-        # FIXED: Sends data inside a secure post packet body to bypass URL length walls completely!
+        # POST payload transmission layout completely bypasses all URL length walls
         payload = {
             "messages": [{"role": "user", "content": full_context}],
             "model": "qwen"
@@ -39,15 +35,6 @@ def get_live_ai_response(user_query, persona, audio_data="", file_data=""):
         return "System cloud cluster busy. Let's try sending that message again!"
     except Exception as e:
         return f"Operational loop interruption: {str(e)}"
-
-def analyze_audio(audio_file):
-    try:
-        y, sr = librosa.load(audio_file, duration=30)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        tempo_val = float(tempo) if isinstance(tempo, (np.ndarray, list)) else float(tempo)
-        return f"[Audio Analysis Metrics] Track Tempo: {tempo_val:.1f} BPM (Beats Per Minute)."
-    except Exception:
-        return "[Audio Note] Track loaded smoothly into workspace storage."
 
 def generate_ai_photo(prompt_text):
     clean_text = "".join(c for c in prompt_text if c.isalnum() or c.isspace())
@@ -95,7 +82,7 @@ title_mappings = {
 st.title(title_mappings[personality_choice])
 st.markdown("---")
 
-# --- FULLY RESTORED: MULTIMEDIA UPLOAD BLOCKS ---
+# --- FULLY RESTORED MULTIMEDIA WORKSPACE ---
 if personality_choice == "Creative Director":
     with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=True):
         col1, col2 = st.columns(2)
@@ -125,21 +112,17 @@ if user_input:
         st.markdown(user_input)
     st.session_state.chat_history.append(("user", user_input))
 
-    # Process background elements on the fly
-    audio_context = ""
-    if personality_choice == "Creative Director" and 'uploaded_audio' in locals() and uploaded_audio:
-        with st.spinner("🎵 Analyzing song rhythm and beat patterns..."):
-            audio_context = analyze_audio(uploaded_audio)
-
     file_context = ""
     if personality_choice == "Creative Director" and 'uploaded_files' in locals() and uploaded_files:
         file_names = ", ".join([f.name for f in uploaded_files])
         file_context = f"[Visual Reference Active Moodboard Files]: {file_names}."
+        if 'uploaded_audio' in locals() and uploaded_audio:
+            file_context += f" [Audio Track Sync Active: {uploaded_audio.name}]"
 
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
         with st.spinner("🧠 System processing..."):
-            ai_reply = get_live_ai_response(user_input, personality_choice, audio_context, file_context)
+            ai_reply = get_live_ai_response(user_input, personality_choice, file_context)
             response_placeholder.markdown(ai_reply)
             
     st.session_state.chat_history.append(("assistant", ai_reply))
