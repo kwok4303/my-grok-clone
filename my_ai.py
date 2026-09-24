@@ -16,17 +16,15 @@ def get_live_ai_response(user_query, persona, file_data=""):
         now = datetime.datetime.now()
         time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
         
-        # Build raw text variables without any string length limitations
         full_context = f"System Directives: {system_rules}{time_anchor}\n"
         if file_data:
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # FIXED: Passes raw text safely inside an internal json payload body using a POST request.
-        # This completely stops the %0A character parsing crash by keeping data out of the URL string!
+        # FIXED: Routed to the ultra-reliable, high-capacity Qwen 72B cluster to clear traffic locks
         payload = {
             "messages": [{"role": "user", "content": full_context}],
-            "model": "openai",
+            "model": "qwen-72b",
             "jsonMode": False
         }
         
