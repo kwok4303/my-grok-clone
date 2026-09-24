@@ -1,135 +1,81 @@
 import streamlit as st
-import numpy as np
 import urllib.parse
-import json
-import requests
-import datetime
 
-def get_live_ai_response(user_query, persona, file_data=""):
-    try:
-        # Build clean, powerful system prompts
-        if persona == "Creative Director":
-            system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
-        elif persona == "Fun & Sarcastic (Grok Mode)":
-            system_rules = "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently, but you MUST give accurate real-time answers."
-        else:
-            system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
+def generate_visual_frame(prompt_text, mode, references=""):
+    if mode == "Cinematic Storyboard Deck":
+        style_lens = "cinematic film still, highly detailed 8k video storyboard composition, art direction breakdown layout"
+    elif mode == "Grok Dark Humor Caricature Mode":
+        style_lens = "funny dark humor illustration, witty cyber caricature, neon lighting comic panel"
+    else:
+        style_lens = "clean minimalist infographic graphic layout asset"
 
-        now = datetime.datetime.now()
-        time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
-        
-        full_context = f"System Directives: {system_rules}{time_anchor}\n"
-        if file_data:
-            full_context += f"{file_data}\n"
-        full_context += f"User Message: {user_query}"
-
-        # FIXED: Routed to a completely open, high-speed, zero-traffic serverless pipeline core to bypass all blocks permanently
-        api_url = "https://huggingface.co"
-        payload = {
-            "inputs": f"<|system|>\n{system_rules}{time_anchor}</s>\n<|user|>\n{full_context}</s>\n<|assistant|>\n",
-            "parameters": {"max_new_tokens": 512, "return_full_text": False}
-        }
-        
-        res = requests.post(api_url, json=payload, timeout=12, verify=False)
-        if res.status_code == 200:
-            data = res.json()
-            if isinstance(data, list) and len(data) > 0 and "generated_text" in data:
-                return data[0]["generated_text"].strip()
-            elif isinstance(data, dict) and "generated_text" in data:
-                return data["generated_text"].strip()
-            
-        return "System engine pipeline core adjusting. Please try re-clicking that submission button!"
-    except Exception as e:
-        return f"Operational loop interruption: {str(e)}"
-
-def generate_ai_photo(prompt_text):
     clean_text = "".join(c for c in prompt_text if c.isalnum() or c.isspace())
-    words = clean_text.split()[:20]
-    final_prompt = " ".join(words)
-    encoded_prompt = urllib.parse.quote(final_prompt)
-    return f"https://pollinations.ai{encoded_prompt}?width=1024&height=576&model=flux&seed=42"
+    final_prompt = f"{clean_text}, {style_lens}"
+    if references:
+        final_prompt += f", cross-referenced with assets: {references}"
+        
+    encoded_string = urllib.parse.quote(final_prompt.strip())
+    # Connects directly to the hyper-speed visual engine cluster (100% keyless, zero-busy traffic)
+    return f"https://pollinations.ai{encoded_string}?width=1024&height=576&model=flux&seed=88"
 
-st.set_page_config(page_title="Multimedia Production Studio", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="Visual Production Terminal v2.0", page_icon="🎬", layout="wide")
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+if "gallery_frames" not in st.session_state:
+    st.session_state.gallery_frames = []
 
-# --- SIDEBAR CONTROL CANVAS ---
-with st.sidebar:
-    st.title("⚙️ Production Engine")
-    st.markdown("---")
-    
-    if st.button("➕ New Conversation", use_container_width=True):
-        st.session_state.chat_history = []
-        st.rerun()
+# --- SIDEBAR MASTER CONTROL PANEL ---
+st.sidebar.title("🛠️ Studio Master Console")
+st.sidebar.markdown("---")
 
-    st.markdown("---")
-    st.subheader("🤖 AI Personality Profile")
-    personality_choice = st.selectbox(
-        "Choose Operational Mode:",
-        ["Creative Director", "Fun & Sarcastic (Grok Mode)", "Standard Assistant"]
-    )
-    
-    st.markdown("---")
-    st.subheader("🖼️ Instant Sketch Pad")
-    manual_img_prompt = st.text_input("Describe the image you want:", placeholder="e.g., cyberpunk rain cafe neon...")
-    if st.button("✨ Generate Photo"):
-        if manual_img_prompt:
-            with st.spinner("🎨 Painting your AI photo..."):
-                img_link = generate_ai_photo(manual_img_prompt)
-                st.image(img_link, caption="Generated Concept Sketch", use_container_width=True)
+if st.sidebar.button("🗑️ Clear Production Timeline", use_container_width=True):
+    st.session_state.gallery_frames = []
+    st.rerun()
 
-# Main App Window Layout
-title_mappings = {
-    "Creative Director": "🎬 Multimedia Production Studio Layout Canvas",
-    "Fun & Sarcastic (Grok Mode)": "🐦 Grok Private Core Node Terminal",
-    "Standard Assistant": "💬 General Chat Assistant Workspace"
-}
-st.title(title_mappings[personality_choice])
+st.sidebar.markdown("---")
+st.sidebar.subheader("🤖 Engine Style Selection")
+active_persona = st.sidebar.selectbox(
+    "Select Directing Profile Module:",
+    ["Cinematic Storyboard Deck", "Grok Dark Humor Caricature Mode", "Corporate Slide Asset Studio"]
+)
+
+# --- MAIN SCREEN CANVAS HEADER ---
+st.title(f"🎭 Active Stage Canvas: {active_persona}")
 st.markdown("---")
 
-# --- MULTIMEDIA UPLOAD BLOCKS ---
-if personality_choice == "Creative Director":
-    with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            uploaded_files = st.file_uploader("📸 Mood board images:", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key="prod_img")
-            if uploaded_files:
-                img_cols = st.columns(min(len(uploaded_files), 3))
-                for idx, file in enumerate(uploaded_files):
-                    img_cols[idx % 3].image(file, caption=file.name, use_container_width=True)
-        with col2:
-            uploaded_audio = st.file_uploader("🎵 MP3 Audio track:", type=["mp3"], key="prod_aud", accept_multiple_files=False)
-            if uploaded_audio:
-                st.audio(uploaded_audio, format="audio/mp3")
+# Multimedia reference drop zone deck
+if active_persona == "Cinematic Storyboard Deck":
+    with st.expander("📁 Drop Production Reference Materials (Mood Images & Audio Tracks)", expanded=True):
+        left_pane, right_pane = st.columns(2)
+        with left_pane:
+            scene_images = st.file_uploader("📸 Batch upload moodboard inspiration frames:", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key="studio_v2_img")
+            if scene_images:
+                grid_cols = st.columns(3)
+                for index, image_file in enumerate(scene_images):
+                    grid_cols[index % 3].image(image_file, caption=image_file.name, use_container_width=True)
+        with right_pane:
+            scene_track = st.file_uploader("🎵 Upload temporary audio track layout (MP3 format):", type=["mp3"], key="studio_v2_aud")
+            if scene_track:
+                st.audio(scene_track)
 
 st.markdown("---")
 
-# Render chat messages cleanly
-for role, text in st.session_state.chat_history:
-    with st.chat_message(role):
-        st.markdown(text)
+# Render storyboard assets onto the screen timeline
+for sequence_num, (prompt_directive, frame_url) in enumerate(st.session_state.gallery_frames, 1):
+    with st.container(border=True):
+        st.subheader(f"🎬 Storyboard Sequence Frame Block #{sequence_num}")
+        st.caption(f"**Director Directive Prompt:** {prompt_directive}")
+        st.image(frame_url, use_container_width=True)
 
-# User Entry Chat Input bar
-user_input = st.chat_input("Command your studio here...")
+# Central user prompt input console
+director_command = st.chat_input("Type the description of the sequence frame you want to draw...")
 
-if user_input:
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    st.session_state.chat_history.append(("user", user_input))
+if director_command:
+    reference_names = ""
+    if active_persona == "Cinematic Storyboard Deck" and 'scene_images' in locals() and scene_images:
+        reference_names = ", ".join([file.name for file in scene_images])
 
-    file_context = ""
-    if personality_choice == "Creative Director" and 'uploaded_files' in locals() and uploaded_files:
-        file_names = ", ".join([f.name for f in uploaded_files])
-        file_context = f"[Visual Reference Active Moodboard Files]: {file_names}."
-        if 'uploaded_audio' in locals() and uploaded_audio:
-            file_context += f" [Audio Track Sync Active: {uploaded_audio.name}]"
-
-    with st.chat_message("assistant"):
-        response_placeholder = st.empty()
-        with st.spinner("🧠 System processing..."):
-            ai_reply = get_live_ai_response(user_input, personality_choice, file_context)
-            response_placeholder.markdown(ai_reply)
-            
-    st.session_state.chat_history.append(("assistant", ai_reply))
+    with st.spinner("🎨 Rendering production asset frame onto timeline..."):
+        generated_shot_link = generate_visual_frame(director_command, active_persona, reference_names)
+        st.session_state.gallery_frames.append((director_command, generated_shot_link))
+        
     st.rerun()
