@@ -26,7 +26,7 @@ def get_live_ai_response(user_query, persona, file_data=""):
         # POST payload transmission layout completely bypasses all URL length walls
         payload = {
             "messages": [{"role": "user", "content": full_context}],
-            "model": "qwen"
+            "model": "openai"
         }
         
         res = requests.post("https://pollinations.ai", json=payload, timeout=15)
@@ -82,7 +82,7 @@ title_mappings = {
 st.title(title_mappings[personality_choice])
 st.markdown("---")
 
-# --- FULLY RESTORED MULTIMEDIA WORKSPACE ---
+# --- MULTIMEDIA UPLOAD BLOCKS ---
 if personality_choice == "Creative Director":
     with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=True):
         col1, col2 = st.columns(2)
