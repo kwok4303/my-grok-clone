@@ -2,12 +2,8 @@ import streamlit as st
 import numpy as np
 import librosa
 import urllib.parse
+import requests
 from ddgs import DDGS
-from groq import Groq
-
-# 1. CLOUD GATEWAY: Initialize the connection to the cloud brain infrastructure
-# When you deploy publicly, Streamlit safely injects this password automatically!
-api_key = st.secrets.get("GROQ_API_KEY", "")
 
 def search_the_web(query):
     try:
@@ -41,7 +37,7 @@ def generate_ai_photo(prompt_text):
 
 st.set_page_config(page_title="Grok Clone Studio", page_icon="🐦", layout="wide")
 
-# Persistent short-term browser thread session states
+# Persistent browser thread sessions
 if "threads" not in st.session_state:
     st.session_state.threads = {1: {"title": "Grok Core Node Chat", "messages": []}}
 if "active_id" not in st.session_state:
@@ -72,7 +68,7 @@ with st.sidebar:
             if st.button("🗑️", key=f"del_{t_id}"):
                 if len(st.session_state.threads) > 1:
                     del st.session_state.threads[t_id]
-                    st.session_state.active_id = list(st.session_state.threads.keys())[0]
+                    st.session_state.active_id = list(st.session_state.threads.keys())
                 else:
                     st.session_state.threads = {1: {"title": "Grok Core Node Chat", "messages": []}}
                     st.session_state.active_id = 1
@@ -81,18 +77,18 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("⚙️ System Directives")
     personality_choice = st.selectbox(
-        "AI Operational Persona Profile Layout Selection Mapping Module:",
+        "AI Operational Persona Selection:",
         ["Fun & Sarcastic (Grok Mode)", "Standard Assistant", "Creative Director"]
     )
     
     personality_prompts = {
-        "Fun & Sarcastic (Grok Mode)": "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently or acting mildly annoyed by their text queries, but you MUST use provided live web search data to ultimately give highly accurate, specific real-time answers.",
+        "Fun & Sarcastic (Grok Mode)": "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently, but you MUST use provided live web search data to give highly accurate, up-to-date answers.",
         "Standard Assistant": "You are a helpful, professional assistant.",
         "Creative Director": "You are a world-class music video director. Combine media tracks and styles into video storyboards."
     }
 
     st.markdown("---")
-    st.subheader("🖼️ Instant Image Rendering Studio")
+    st.subheader("🖼️ Instant Image Studio")
     manual_img_prompt = st.text_input("Describe the picture to draw:", placeholder="e.g., cyber rebel looking at city...")
     if st.button("✨ Paint Frame"):
         if manual_img_prompt:
@@ -100,16 +96,15 @@ with st.sidebar:
                 img_link = generate_ai_photo(manual_img_prompt)
                 st.image(img_link, caption="Generated Frame Layout", use_container_width=True)
 
-# Main Application Frame Rendering
+# Main Application Frame
 title_mappings = {
     "Fun & Sarcastic (Grok Mode)": "🐦 Grok Private Core Node Terminal",
     "Standard Assistant": "💬 General Chat Assistant Workspace",
-    "Creative Director": "🎬 Multimedia Production Studio Studio Layout Canvas"
+    "Creative Director": "🎬 Multimedia Production Studio Layout Canvas"
 }
 st.title(title_mappings[personality_choice])
 st.caption(f"Active Thread Tracker Context ID: **#{st.session_state.active_id}**")
 
-# Collapsible media components mapped directly into Creative Director layouts
 if personality_choice == "Creative Director":
     with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=False):
         col1, col2 = st.columns(2)
@@ -168,36 +163,32 @@ if user_input:
 
     system_rule = {"role": "system", "content": personality_prompts[personality_choice]}
     
-    # Format messages array correctly to comply with cloud server parameters
-    formatted_history = []
+    # Pack clean history for cloud transmission
+    run_messages = [{"role": "system", "content": system_rule["content"]}]
     for msg in current_messages[:-1]:
-        formatted_history.append({"role": msg["role"], "content": msg["content"]})
-    formatted_history.append({"role": "user", "content": final_text_prompt})
-    
-    run_messages = [system_rule] + formatted_history
+        run_messages.append({"role": msg["role"], "content": msg["content"]})
+    run_messages.append({"role": "user", "content": final_text_prompt})
 
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
         full_response = ""
         
-        if not api_key:
-            st.error("🔒 Groq API Key Missing! Go to the sidebar control deck layout configurations or set up Streamlit secrets parameters.")
-        else:
+        with st.spinner("🧠 Grok is thinking..."):
             try:
-                # Connected securely to Groq's high-speed cloud cluster framework using the elite Llama 3.3 70B brain!
-                client = Groq(api_key=api_key)
-                response_stream = client.chat.completions.create(
-                    model='llama-3.3-70b-specdec',
-                    messages=run_messages,
-                    stream=True
-                )
-                for chunk in response_stream:
-                    if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        response_placeholder.markdown(full_response + "▌")
-                response_placeholder.markdown(full_response)
+                # Fire request directly to the public open-source cloud model cluster endpoint (No Keys Needed!)
+                payload = {
+                    "messages": run_messages,
+                    "model": "p1", # Links to premium open-source Qwen2.5 72B high-end text brain
+                    "stream": False
+                }
+                res = requests.post("https://pollinations.ai", json=payload)
+                if res.status_code == 200:
+                    full_response = res.text
+                    response_placeholder.markdown(full_response)
+                else:
+                    st.error("Cloud processing pipeline node busy. Please try again.")
             except Exception as e:
-                st.error(f"Cloud Engine Pipeline Connection Interrupted: {str(e)}")
+                st.error(f"Connection error: {str(e)}")
         
     if full_response:
         current_messages.append({"role": "assistant", "content": full_response})
