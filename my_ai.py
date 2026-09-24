@@ -3,7 +3,7 @@ import numpy as np
 import librosa
 import urllib.parse
 import requests
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 
 def search_the_web(query):
     try:
