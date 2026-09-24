@@ -15,19 +15,21 @@ def get_live_ai_response(user_query, persona, file_data=""):
             system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
 
         now = datetime.datetime.now()
-        time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
+        time_anchor = f" [Current Time: {now.strftime('%I:%M %p')} Local Zone]"
         
-        # Stitch compound query block parameters safely
-        full_context = f"System Directives: {system_rules}{time_anchor}\n"
+        # Stitch compound query block parameters safely WITHOUT line breaks (\n)
+        full_context = f"System Directives: {system_rules} {time_anchor} | "
         if file_data:
-            full_context += f"{file_data}\n"
+            full_context += f"{file_data} | "
         full_context += f"User Message: {user_query}"
 
-        # URL-encode the text string to pass it safely through a keyless open endpoint
-        encoded_text = urllib.parse.quote(full_context)
+        # FIXED: Explicitly strip out any line breaks to completely eliminate the invalid %0A code error!
+        flat_context = full_context.replace("\n", " ").replace("\r", " ")
+
+        # URL-encode the flat text string to pass it safely through the keyless endpoint
+        encoded_text = urllib.parse.quote(flat_context)
         api_url = f"https://pollinations.ai{encoded_text}?model=searchgpt&jsonMode=false"
         
-        # Safe browser-mimicking headers to bypass datacenter firewalls completely
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
