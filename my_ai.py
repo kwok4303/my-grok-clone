@@ -37,7 +37,6 @@ def generate_ai_photo(prompt_text):
 
 st.set_page_config(page_title="Grok Clone Studio", page_icon="🐦", layout="wide")
 
-# Persistent browser thread sessions
 if "threads" not in st.session_state:
     st.session_state.threads = {1: {"title": "General AI Workspace Chat", "messages": []}}
 if "active_id" not in st.session_state:
@@ -75,7 +74,7 @@ with st.sidebar:
                 st.rerun()
 
     st.markdown("---")
-    st.subheader("⚙️ System Directives")
+    st.subheader("⚙️ Controls")
     personality_choice = st.selectbox(
         "AI Operational Persona Selection:",
         ["Fun & Sarcastic (Grok Mode)", "Standard Assistant", "Creative Director"]
@@ -96,7 +95,7 @@ with st.sidebar:
                 img_link = generate_ai_photo(manual_img_prompt)
                 st.image(img_link, caption="Generated Frame Layout", use_container_width=True)
 
-# Main Application Frame Mapping
+# Main Title Canvas
 title_mappings = {
     "Fun & Sarcastic (Grok Mode)": "🐦 Grok Private Core Node Terminal",
     "Standard Assistant": "💬 General Chat Assistant Workspace",
@@ -105,7 +104,6 @@ title_mappings = {
 st.title(title_mappings[personality_choice])
 st.caption(f"Active Thread Tracker Context ID: **#{st.session_state.active_id}**")
 
-# Collapsible media components mapped directly into Creative Director layouts
 if personality_choice == "Creative Director":
     with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=False):
         col1, col2 = st.columns(2)
@@ -162,31 +160,34 @@ if user_input:
             web_data = search_the_web(user_input)
             final_text_prompt = f"Current Live Web Search Results:\n{web_data}\n\nUser Question: {final_text_prompt}"
 
-    system_rule = {"role": "system", "content": personality_prompts[personality_choice]}
-    
-    # Pack clean history for cloud transmission
-    run_messages = [{"role": "system", "content": system_rule["content"]}]
-    for msg in current_messages[:-1]:
-        run_messages.append({"role": msg["role"], "content": msg["content"]})
-    run_messages.append({"role": "user", "content": final_text_prompt})
-
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
         full_response = ""
         
         with st.spinner("🧠 System processing..."):
             try:
+                # FIXED: Converted query transmission method to a clean, flat string layout structure
+                # to prevent cloud server processing drops completely!
+                system_instruction = personality_prompts[personality_choice]
+                
+                # Build chat history context text block
+                history_text = f"System Context instruction: {system_instruction}\n\n"
+                for msg in current_messages[:-1]:
+                    history_text += f"{msg['role'].upper()}: {msg['content']}\n"
+                history_text += f"USER: {final_text_prompt}\nASSISTANT:"
+
                 payload = {
-                    "messages": run_messages,
-                    "model": "p1", # Accesses the premium 72B open-source engine
-                    "stream": False
+                    "messages": [{"role": "user", "content": history_text}],
+                    "model": "qwen", # Swapped to the ultra-reliable Qwen cloud inference node
+                    "jsonMode": False
                 }
+                
                 res = requests.post("https://pollinations.ai", json=payload)
                 if res.status_code == 200:
-                    full_response = res.text
+                    full_response = res.text.strip()
                     response_placeholder.markdown(full_response)
                 else:
-                    st.error("Cloud processing pipeline node busy. Please try again.")
+                    st.error(f"Cloud server returned code: {res.status_code}")
             except Exception as e:
                 st.error(f"Connection error: {str(e)}")
         
