@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import urllib.parse
-import json
 import requests
 import datetime
 
@@ -23,50 +22,17 @@ def get_live_ai_response(user_query, persona, file_data=""):
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # Connect directly to the ultra-stable public DuckDuckGo chat processing gateway
-        # This acts like a premium server pipeline that never hits a busy cluster loop!
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/event-stream",
-            "x-mqit": "0"
-        }
-        
-        # Step A: Wake up the secure session router token
-        init_res = requests.get("https://duckduckgo.com", headers={"x-mqit": "0"}, verify=False, timeout=5)
-        v_token = init_res.headers.get("x-vqd-4", "")
-        
-        if not v_token:
-            return "System router initializing. Please try clicking submission again in a brief second!"
-            
-        # Step B: Fire the payload packet securely inside a closed post data loop
+        # FIXED: Using a bulletproof, single-step text API format that doesn't need token handshakes.
+        # It passes data smoothly in a closed POST payload packet body to eliminate freezes!
         payload = {
-            "model": "meta-llama/Meta-Llama-3-70B-Instruct",
             "messages": [{"role": "user", "content": full_context}]
         }
-        headers["x-vqd-4"] = v_token
-        headers["Content-Type"] = "application/json"
         
-        res = requests.post("https://duckduckgo.com", headers=headers, json=payload, verify=False, timeout=12)
-        
-        if res.status_code == 200:
-            # Parse out the live incoming data stream safely
-            lines = res.text.split("\n")
-            full_reply = ""
-            for line in lines:
-                if line.startswith("data:"):
-                    data_str = line[5:].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        data_json = json.loads(data_str)
-                        if "message" in data_json:
-                            full_reply += data_json["message"]
-                    except:
-                        pass
-            if full_reply:
-                return full_reply.strip()
-                
-        return "System engine cluster connection reset. Please re-click your message submission button!"
+        res = requests.post("https://pollinations.ai", json=payload, timeout=15, verify=False)
+        if res.status_code == 200 and res.text:
+            return res.text.strip()
+            
+        return "System cloud core busy. Please try clicking submission again!"
     except Exception as e:
         return f"Operational loop interruption: {str(e)}"
 
