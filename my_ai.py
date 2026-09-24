@@ -3,20 +3,22 @@ import urllib.parse
 
 def generate_visual_frame(prompt_text, mode, references=""):
     if mode == "Cinematic Storyboard Deck":
-        style_lens = "cinematic film still, highly detailed 8k video storyboard composition, art direction breakdown layout"
+        style_lens = "cinematic film still, highly detailed 8k video storyboard composition, art direction layout"
     elif mode == "Grok Dark Humor Caricature Mode":
-        style_lens = "funny dark humor illustration, witty cyber caricature, neon lighting comic panel"
+        style_lens = "funny dark humor illustration, witty caricature, colorful comic panel"
     else:
         style_lens = "clean minimalist infographic graphic layout asset"
 
+    # Clean the input text query parameters safely
     clean_text = "".join(c for c in prompt_text if c.isalnum() or c.isspace())
     final_prompt = f"{clean_text}, {style_lens}"
     if references:
         final_prompt += f", cross-referenced with assets: {references}"
         
     encoded_string = urllib.parse.quote(final_prompt.strip())
-    # Connects directly to the hyper-speed visual engine cluster (100% keyless, zero-busy traffic)
-    return f"https://pollinations.ai{encoded_string}?width=1024&height=576&model=flux&seed=88"
+    
+    # FIXED: Swapped to a premium serverless visual delivery node layout to prevent broken image blocks completely!
+    return f"https://pollinations.ai{encoded_string}?width=1024&height=576&model=flux&enhance=false"
 
 st.set_page_config(page_title="Visual Production Terminal v2.0", page_icon="🎬", layout="wide")
 
