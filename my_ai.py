@@ -5,35 +5,41 @@ import datetime
 
 def get_live_ai_response(user_query, persona):
     try:
-        clean_text = "".join(c for c in user_query if c.isalnum() or c.isspace())
+        # Strip special characters and keep text ultra-short
+        clean_text = "".join(c for c in user_query if c.isalnum() or c.isspace())[:50]
         
-        system_rules = (
-            "You are a clone of X's Grok AI. You are highly intelligent, sarcastic, witty, and humorous. Love roasting the user gently. Give highly accurate real-time answers."
-            if persona == "Fun & Sarcastic (Grok Mode)"
-            else "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
-        )
+        # Build ultra-short, space-saving instructions to easily fit the URL length limits
+        if persona == "Fun & Sarcastic (Grok Mode)":
+            system_rules = "Act as X's Grok AI. Be highly intelligent, witty, and deeply sarcastic. Roast the user playfully."
+        else:
+            system_rules = "Act as a helpful, polite, and direct AI assistant."
         
-        # FIXED: Uses your laptop's standard clock to track time instantly without messy web errors
         now = datetime.datetime.now()
-        time_anchor = f" [Current Internal Clock Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} Lagos/Local Zone]"
-        combined_prompt = f"{system_rules} User Question: {clean_text}{time_anchor}"
+        time_anchor = f" Time: {now.strftime('%H:%M')}."
         
+        # Create a clean, short composite text block
+        combined_prompt = f"{system_rules} Query: {clean_text}. {time_anchor}"
+        
+        # Encode and route using a highly stable API method
         encoded_query = urllib.parse.quote(combined_prompt)
-        api_url = f"https://pollinations.ai{encoded_query}?model=openai&jsonMode=false"
-        res = requests.get(api_url, timeout=12, verify=False)
+        api_url = f"https://pollinations.ai{encoded_query}"
+        
+        # Add a custom text header to enforce standard chat processing behaviors
+        headers = {"Content-Type": "text/plain"}
+        res = requests.get(api_url, headers=headers, timeout=12, verify=False)
         
         if res.status_code == 200 and res.text:
             return res.text.strip()
-        return "System network core busy. Let's try that message again!"
+        return "System engine cluster busy. Send that message again!"
     except Exception as e:
-        return f"Operational loop error: {str(e)}"
+        return f"Operational drop: {str(e)}"
 
 st.set_page_config(page_title="Grok Clone Studio", page_icon="🐦", layout="wide")
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- SIDEBAR CONTROL CANVAS ---
+# --- SIDEBAR CONTROL DECK ---
 with st.sidebar:
     st.title("🐦 Grok-Style Terminal")
     
@@ -58,11 +64,11 @@ with st.sidebar:
                 img_link = f"https://pollinations.ai{encoded_img}?width=1024&height=576&model=flux&seed=42"
                 st.image(img_link, caption="Generated Frame Layout", use_container_width=True)
 
-# Main Title canvas headers mapping rules
+# Main Title headers
 st.title("🐦 Grok Private Core Node Terminal" if personality_choice == "Fun & Sarcastic (Grok Mode)" else "💬 General Chat Assistant Workspace")
 st.markdown("---")
 
-# Render active layout message bubbles cleanly onto screen view grids
+# Render active message bubbles cleanly onto screen view grids
 for role, text in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(text)
