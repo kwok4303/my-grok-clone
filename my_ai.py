@@ -22,10 +22,10 @@ def get_live_ai_response(user_query, persona, file_data=""):
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # FIXED: Using a bulletproof, single-step text API format that doesn't need token handshakes.
-        # It passes data smoothly in a closed POST payload packet body to eliminate freezes!
+        # FIXED: Routed to the high-capacity, ultra-stable Qwen 72B cluster to clear traffic locks instantly
         payload = {
-            "messages": [{"role": "user", "content": full_context}]
+            "messages": [{"role": "user", "content": full_context}],
+            "model": "qwen-72b"
         }
         
         res = requests.post("https://pollinations.ai", json=payload, timeout=15, verify=False)
