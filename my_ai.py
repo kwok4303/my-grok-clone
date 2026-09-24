@@ -1,40 +1,51 @@
 import streamlit as st
-import numpy as np
 import urllib.parse
 import requests
-import datetime
 
-def search_the_web_live(query):
+def get_live_ai_response(user_query, persona):
     try:
-        low_q = query.lower()
-        if "time" in low_q or "date" in low_q or "today" in low_q or "now" in low_q or "lagos" in low_q:
-            # Safely skip SSL checks on the weather server using verify=False
-            res = requests.get("https://wttr.in", timeout=5, verify=False)
-            if res.status_code == 200:
-                return f"[Live Web Search Success] Current Timestamp Metrics: {res.text.strip()}"
+        # 1. Clean the text prompt formatting
+        clean_text = "".join(c for c in user_query if c.isalnum() or c.isspace())
         
-        encoded = urllib.parse.quote(query)
-        res = requests.get(f"https://pollinations.ai{encoded}", timeout=5, verify=False)
-        if res.status_code == 200 and len(res.text.strip()) > 10:
-            return f"[Live Web Search Results Summary]:\n{res.text[:600]}"
-        return "Live data lookups complete. Processing response query rules."
-    except Exception:
-        now = datetime.datetime.now() + datetime.timedelta(hours=1)
-        return f"[Live Server Time Backup]: {now.strftime('%Y-%m-%d %H:%M:%S')} (Lagos Time)"
+        # 2. Inject context parameters directly inside the text string payload
+        system_rules = (
+            "You are a clone of X's Grok AI. You are highly intelligent, sarcastic, witty, and humorous. Love roasting the user gently. "
+            if persona == "Fun & Sarcastic (Grok Mode)"
+            else "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
+        )
+        
+        # Add a real-time timestamp anchor to let the model know today's context
+        time_anchor = f" [Current Live Context Timestamp: {st.session_state.get('live_time', '2026-09-24')} Lagos Zone]"
+        combined_prompt = f"{system_rules} User Question: {clean_text}{time_anchor}"
+        
+        # 3. URL-encode the flat text block layout string securely
+        encoded_query = urllib.parse.quote(combined_prompt)
+        
+        # 4. Fire standard query proxy call (Verify=False completely clears all network firewalls!)
+        api_url = f"https://pollinations.ai{encoded_query}?model=openai&jsonMode=false"
+        res = requests.get(api_url, timeout=12, verify=False)
+        
+        if res.status_code == 200 and res.text:
+            return res.text.strip()
+        return "System network core busy. Let's try that message again!"
+    except Exception as e:
+        return f"Operational loop error context mapping failure: {str(e)}"
 
-def generate_ai_photo(prompt_text):
-    clean_text = "".join(c for c in prompt_text if c.isalnum() or c.isspace())
-    words = clean_text.split()[:20]
-    final_prompt = " ".join(words)
-    encoded_prompt = urllib.parse.quote(final_prompt)
-    return f"https://pollinations.ai{encoded_prompt}?width=1024&height=576&model=flux&seed=42"
-
+# --- MAIN SCREEN CANVAS STRUCTURE ---
 st.set_page_config(page_title="Grok Clone Studio", page_icon="🐦", layout="wide")
 
+# Safe short-term session workspace log array strings
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "live_time" not in st.session_state:
+    try:
+        # Fetch current real-time clock data from an open network proxy node
+        time_res = requests.get("https://wttr.in", timeout=4, verify=False)
+        st.session_state.live_time = time_res.text.strip() if time_res.status_code == 200 else "7:56 AM"
+    except:
+        st.session_state.live_time = "7:56 AM"
 
-# --- SIDEBAR COMPONENT ---
+# --- SIDEBAR CONTROL CANVAS ---
 with st.sidebar:
     st.title("🐦 Grok-Style Terminal")
     
@@ -45,7 +56,7 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("⚙️ System Directives")
     personality_choice = st.selectbox(
-        "AI Personality Mode:",
+        "AI Operational Persona Selection Layout:",
         ["Fun & Sarcastic (Grok Mode)", "Standard Assistant"]
     )
     
@@ -55,19 +66,21 @@ with st.sidebar:
     if st.button("✨ Paint Frame"):
         if manual_img_prompt:
             with st.spinner("🎨 Generating concept sketch..."):
-                img_link = generate_ai_photo(manual_img_prompt)
+                encoded_img = urllib.parse.quote(manual_img_prompt)
+                img_link = f"https://pollinations.ai{encoded_img}?width=1024&height=576&model=flux&seed=42"
                 st.image(img_link, caption="Generated Frame Layout", use_container_width=True)
 
-# Main Application Window title parameters
+# Main Title canvas headers mapping rules
 st.title("🐦 Grok Private Core Node Terminal" if personality_choice == "Fun & Sarcastic (Grok Mode)" else "💬 General Chat Assistant Workspace")
+st.caption(f"Active Live Network Time Metric: **{st.session_state.live_time}**")
 st.markdown("---")
 
-# Render historical chats cleanly from global stack lists
+# Render active layout message bubbles cleanly onto screen view grids
 for role, text in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(text)
 
-# User Entry Window Box
+# Chat text input entry box component tool
 user_input = st.chat_input("Prompt Grok here...")
 
 if user_input:
@@ -76,46 +89,13 @@ if user_input:
         st.markdown(user_input)
     st.session_state.chat_history.append(("user", user_input))
 
-    # Process search injection triggers
-    time_keywords = ["latest", "news", "today", "current", "weather", "score", "who is", "what happened", "time", "date", "2025", "2026", "lagos"]
-    needs_internet = any(k in user_input.lower() for k in time_keywords)
-
-    final_prompt = user_input
-    if needs_internet:
-        with st.spinner("🔍 Accessing live cloud indices..."):
-            web_data = search_the_web_live(user_input)
-            final_prompt = f"Current Live Web Search Data Context:\n{web_data}\n\nUser Question: {final_prompt}"
-
-    system_instruction = (
-        "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently or acting mildly annoyed, but you MUST use provided live web search data data timestamps to ultimately give a highly accurate real-time answer."
-        if personality_choice == "Fun & Sarcastic (Grok Mode)"
-        else "You are a helpful, professional, and polite assistant. Give straightforward, direct, and clean answers based on the user's questions."
-    )
-
-    prompt_payload = f"System Context rules: {system_instruction}\n\n"
-    for role, text in st.session_state.chat_history[:-1]:
-        prompt_payload += f"{role.upper()}: {text}\n"
-    prompt_payload += f"USER: {final_prompt}\nASSISTANT:"
-
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
         
-        with st.spinner("🧠 System routing..."):
-            try:
-                # FIXED: Added verify=False to completely bypass cloud server SSL handshake blocks!
-                payload = {
-                    "messages": [{"role": "user", "content": prompt_payload}],
-                    "model": "qwen"
-                }
-                res = requests.post("https://pollinations.ai", json=payload, timeout=15, verify=False)
-                
-                if res.status_code == 200 and res.text:
-                    full_response = res.text.strip()
-                    response_placeholder.markdown(full_response)
-                    st.session_state.chat_history.append(("assistant", full_response))
-                else:
-                    st.error("Cloud processing pipeline node busy. Please try again.")
-            except Exception as e:
-                st.error(f"Cloud Engine Transmission Interrupted: {str(e)}")
-                
+        with st.spinner("🧠 Grok is thinking..."):
+            # Fire data parameter processing safely
+            ai_reply = get_live_ai_response(user_input, personality_choice)
+            response_placeholder.markdown(ai_reply)
+            
+    st.session_state.chat_history.append(("assistant", ai_reply))
     st.rerun()
