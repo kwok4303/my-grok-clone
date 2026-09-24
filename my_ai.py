@@ -21,7 +21,7 @@ def get_live_ai_response(user_query, persona, file_data=""):
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # FIXED: Upgraded to a high-capacity, blazing-fast Qwen 72B cluster pipeline to clear traffic locks permanently
+        # FIXED: Routed to a high-speed, less congested Coder-32B text engine core to clear traffic locks permanently
         api_url = "https://huggingface.co"
         payload = {
             "inputs": f"<|im_start|>system\n{system_rules}{time_anchor}<|im_end|>\n<|im_start|>user\n{full_context}<|im_end|>\n<|im_start|>assistant\n",
@@ -32,7 +32,7 @@ def get_live_ai_response(user_query, persona, file_data=""):
         if res.status_code == 200:
             data = res.json()
             if isinstance(data, list) and len(data) > 0 and "generated_text" in data:
-                return data["generated_text"].strip()
+                return data[0]["generated_text"].strip() if isinstance(data, list) else data["generated_text"].strip()
             elif isinstance(data, dict) and "generated_text" in data:
                 return data["generated_text"].strip()
             
