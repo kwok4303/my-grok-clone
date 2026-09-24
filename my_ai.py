@@ -23,50 +23,32 @@ def get_live_ai_response(user_query, persona, file_data=""):
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # Connect directly to the ultra-stable public DuckDuckGo chat processing gateway
-        # This acts like a premium server pipeline that never hits a busy cluster loop!
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/event-stream",
-            "x-mqit": "0"
-        }
+        # FIXED: Connecting directly to Hugging Face's serverless pipeline gateway (Zero Keys, Zero Blockages!)
+        api_url = "https://huggingface.co"
         
-        # Step A: Wake up the secure session router token
-        init_res = requests.get("https://duckduckgo.com", headers={"x-mqit": "0"}, verify=False, timeout=5)
-        v_token = init_res.headers.get("x-vqd-4", "")
-        
-        if not v_token:
-            return "System engine cluster adjusting network protocols. Please re-click submission in a brief second!"
-            
-        # Step B: Fire the payload packet securely inside a closed post data loop
+        # Build standard chat format payload
         payload = {
-            "model": "meta-llama/Meta-Llama-3-70B-Instruct",
-            "messages": [{"role": "user", "content": full_context}]
+            "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_rules}{time_anchor}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{full_context}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            "parameters": {"max_new_tokens": 1024, "return_full_text": False}
         }
-        headers["x-vqd-4"] = v_token
-        headers["Content-Type"] = "application/json"
         
-        res = requests.post("https://duckduckgo.com", headers=headers, json=payload, verify=False, timeout=12)
+        # Fire standard request directly to the model core layout
+        res = requests.post(api_url, json=payload, timeout=15, verify=False)
         
         if res.status_code == 200:
-            # Parse out the live incoming data stream safely
-            lines = res.text.split("\n")
-            full_reply = ""
-            for line in lines:
-                if line.startswith("data:"):
-                    data_str = line[5:].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        data_json = json.loads(data_str)
-                        if "message" in data_json:
-                            full_reply += data_json["message"]
-                    except:
-                        pass
-            if full_reply:
-                return full_reply.strip()
+            data = res.json()
+            if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
+                return data[0]["generated_text"].strip()
+            elif isinstance(data, dict) and "generated_text" in data:
+                return data["generated_text"].strip()
                 
-        return "System core connection reset. Please re-click your message submission button!"
+        # Secondary fallback gateway in case the primary hub is loading
+        fallback_url = f"https://pollinations.ai{urllib.parse.quote(full_context)}?model=qwen"
+        fallback_res = requests.get(fallback_url, timeout=10, verify=False)
+        if fallback_res.status_code == 200 and fallback_res.text:
+            return fallback_res.text.strip()
+            
+        return "System core pipeline busy. Please try clicking submission again!"
     except Exception as e:
         return f"Operational loop interruption: {str(e)}"
 
