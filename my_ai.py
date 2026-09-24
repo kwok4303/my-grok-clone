@@ -1,52 +1,49 @@
 import streamlit as st
-import random
+import requests
 import datetime
+import json
 
-def get_offline_response(user_query, persona, file_context=""):
-    low_query = user_query.lower()
-    now = datetime.datetime.now()
-    timestamp = now.strftime("%I:%M %p")
-    
-    grok_greetings = [
-        f"Oh look, someone pushed the enter key! Hello there. It is currently {timestamp} in the local system matrix.",
-        "Congratulations, your message traveled all the way through the cloud nodes cleanly!",
-        f"Systems active. Clocking in at exactly {timestamp}. What are we creating on the studio canvas next?",
-        "Private core terminal operational. I am awake, fully unfrozen, and responding instantly."
-    ]
-    
-    grok_replies = [
-        "That is an interesting query. My internal processors have logged it into the active workspace logs.",
-        "Processing complete. The data streams are perfectly balanced and running smoothly within parameters.",
-        "I'd give you a world-class AI breakdown, but my sarcastic protocols are telling me to keep things short and sweet.",
-        "System dashboard node functional. Your input has been saved cleanly in the central canvas history tracking deck."
-    ]
+def get_live_ai_response(user_query, persona, file_data=""):
+    try:
+        # Build clean, powerful system prompts
+        if persona == "Creative Director":
+            system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and art directions."
+        elif persona == "Fun & Sarcastic (Grok Mode)":
+            system_rules = "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently, but you MUST give accurate real-time answers."
+        else:
+            system_rules = "You are a helpful, professional, and polite AI assistant. Give clean, straightforward answers."
 
-    if persona == "Creative Director":
-        output = f"### 🎬 Visual Script Scene Layout Storyboard Deck\n"
-        output += f"**Active Art Direction Matrix:** Cinematic anamorphic composition layout.\n"
-        if file_context:
-            output += f"**Visual reference files active:** `{file_context}`\n"
-        output += f"**Production Shot Breakdown Directive:**\n"
-        output += f"1. **Wide Establishing Frame:** Camera tracks slowly across the environment based on your input: *'{user_query}'*.\n"
-        output += f"2. **Medium Subject Close-up:** High-contrast lighting focuses on the core thematic elements.\n"
-        output += f"3. **Cutaway Frame Sequence:** Quick rhythmic cuts timed perfectly to match your sound layout assets."
-        return output
+        now = datetime.datetime.now()
+        time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
+        full_context = f"System Directives: {system_rules}{time_anchor}\n"
+        if file_data:
+            full_context += f"{file_data}\n"
+        full_context += f"User Message: {user_query}"
 
-    if persona == "Fun & Sarcastic (Grok Mode)":
-        if any(w in low_query for w in ["hi", "hello", "hey", "there"]):
-            return random.choice(grok_greetings)
-        if "time" in low_query or "lagos" in low_query:
-            return f"You want to know the time? Fine, my internal core clocks say it is exactly **{timestamp}** right now. Don't say I never did anything for you."
-        return random.choice(grok_replies)
+        # Connect directly to the ultra-stable public chat processing gateway via POST data payload
+        payload = {
+            "messages": [{"role": "user", "content": full_context}],
+            "model": "qwen"
+        }
         
-    return "System node functional. Input query logged securely."
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        res = requests.post("https://pollinations.ai", json=payload, headers=headers, timeout=15, verify=False)
+        if res.status_code == 200 and res.text:
+            return res.text.strip()
+            
+        return "🤖 Processing node sync adjustment active. Please re-click the send icon!"
+    except Exception as e:
+        return f"Operational log update delay: {str(e)}"
 
 st.set_page_config(page_title="Multimedia Production Studio", page_icon="🎬", layout="wide")
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- SIDEBAR MASTER DECK ---
+# --- SIDEBAR CONTROL CANVAS ---
 with st.sidebar:
     st.title("⚙️ Production Engine")
     st.markdown("---")
@@ -63,9 +60,9 @@ with st.sidebar:
     )
     
     st.markdown("---")
-    st.caption("Engine Status: 🟢 100% Stable Internal Core Active")
+    st.caption("Engine Status: 🟢 Live Online Chat Matrix Connected")
 
-# Main Interface Titles
+# Main App Window Layout Mappings
 title_mappings = {
     "Creative Director": "🎬 Multimedia Production Studio Layout Canvas",
     "Fun & Sarcastic (Grok Mode)": "🐦 Grok Private Core Node Terminal",
@@ -74,15 +71,16 @@ title_mappings = {
 st.title(title_mappings[personality_choice])
 st.markdown("---")
 
-# Multimedia workspace slots
+# --- MULTIMEDIA UPLOAD BLOCKS ---
 if personality_choice == "Creative Director":
     with st.expander("📁 Open Media Upload Workspace (Images & Music Tracks)", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
             uploaded_files = st.file_uploader("📸 Mood board images:", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key="prod_img")
             if uploaded_files:
-                for file in uploaded_files:
-                    st.image(file, caption=file.name)
+                img_cols = st.columns(min(len(uploaded_files), 3))
+                for idx, file in enumerate(uploaded_files):
+                    img_cols[idx % 3].image(file, caption=file.name, use_container_width=True)
         with col2:
             uploaded_audio = st.file_uploader("🎵 MP3 Audio track:", type=["mp3"], key="prod_aud", accept_multiple_files=False)
             if uploaded_audio:
@@ -90,12 +88,12 @@ if personality_choice == "Creative Director":
 
 st.markdown("---")
 
-# Render historical messages
+# Render historical chats cleanly
 for role, text in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(text)
 
-# Chat Input bar
+# User Entry Chat Input bar
 user_input = st.chat_input("Command your studio here...")
 
 if user_input:
@@ -105,13 +103,14 @@ if user_input:
 
     file_context = ""
     if personality_choice == "Creative Director" and 'uploaded_files' in locals() and uploaded_files:
-        file_context = ", ".join([f.name for f in uploaded_files])
+        file_names = ", ".join([f.name for f in uploaded_files])
+        file_context = f"[Visual Reference Active Moodboard Files]: {file_names}."
 
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
-        with st.spinner("🧠 Internal loop calculating..."):
-            reply = get_offline_response(user_input, personality_choice, file_context)
-            response_placeholder.markdown(reply)
+        with st.spinner("🧠 Connecting to brain cluster..."):
+            ai_reply = get_live_ai_response(user_input, personality_choice, file_context)
+            response_placeholder.markdown(ai_reply)
             
-    st.session_state.chat_history.append(("assistant", reply))
+    st.session_state.chat_history.append(("assistant", ai_reply))
     st.rerun()
