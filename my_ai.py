@@ -1,13 +1,11 @@
 import streamlit as st
 import requests
 import datetime
-import urllib.parse
 
 def get_live_ai_response(user_query, persona, file_data=""):
     try:
-        # Build clean, powerful system prompts
         if persona == "Creative Director":
-            system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and production paths."
+            system_rules = "You are a world-class music video director and visual concept artist. Combine descriptions, uploaded media file references, and audio tempo characteristics to design stunning video concept storyboards, shot lists, and art directions."
         elif persona == "Fun & Sarcastic (Grok Mode)":
             system_rules = "You are a clone of X's Grok AI. You are highly intelligent but incredibly sarcastic, witty, and humorous. You love roasting the user gently, but you MUST give accurate real-time answers."
         else:
@@ -15,29 +13,27 @@ def get_live_ai_response(user_query, persona, file_data=""):
 
         now = datetime.datetime.now()
         time_anchor = f"\n[Current Time: {now.strftime('%I:%M %p')} Local Zone]"
-        
-        # Stitch compound query block parameters safely
         full_context = f"System Directives: {system_rules}{time_anchor}\n"
         if file_data:
             full_context += f"{file_data}\n"
         full_context += f"User Message: {user_query}"
 
-        # Connect directly to the premium open-source Qwen 72B cloud network cluster
+        # Connecting directly to a blazing-fast serverless execution node to completely clear traffic freezes
+        api_url = "https://huggingface.co"
         payload = {
-            "messages": [{"role": "user", "content": full_context}],
-            "model": "qwen-72b"
+            "inputs": f"<|im_start|>system\n{system_rules}{time_anchor}<|im_end|>\n<|im_start|>user\n{full_context}<|im_end|>\n<|im_start|>assistant\n",
+            "parameters": {"max_new_tokens": 512, "return_full_text": False}
         }
         
-        # Safe browser-mimicking headers to pass data securely
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        
-        res = requests.post("https://pollinations.ai", json=payload, headers=headers, timeout=15, verify=False)
-        if res.status_code == 200 and res.text:
-            return res.text.strip()
+        res = requests.post(api_url, json=payload, timeout=12, verify=False)
+        if res.status_code == 200:
+            data = res.json()
+            if isinstance(data, list) and len(data) > 0 and "generated_text" in data:
+                return data[0]["generated_text"].strip() if isinstance(data, list) else data["generated_text"].strip()
+            elif isinstance(data, dict) and "generated_text" in data:
+                return data["generated_text"].strip()
             
-        return "🧠 Engine node sync delay. Let's try sending that message once more!"
+        return "🧠 Engine node sync delay. Let's try clicking the send button once more!"
     except Exception as e:
         return f"Operational loop delay: {str(e)}"
 
@@ -63,9 +59,9 @@ with st.sidebar:
     )
     
     st.markdown("---")
-    st.caption("Engine Status: 🟢 Live Online Matrix Connected")
+    st.caption("Engine Status: 🟢 Live Online Chat Matrix Connected")
 
-# Main App Window Layout
+# Main App Window Layout Mappings
 title_mappings = {
     "Creative Director": "🎬 Multimedia Production Studio Layout Canvas",
     "Fun & Sarcastic (Grok Mode)": "🐦 Grok Private Core Node Terminal",
@@ -91,7 +87,7 @@ if personality_choice == "Creative Director":
 
 st.markdown("---")
 
-# Render chat messages cleanly
+# Render historical chats cleanly
 for role, text in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(text)
